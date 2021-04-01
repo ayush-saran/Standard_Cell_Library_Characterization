@@ -1,0 +1,122 @@
+.CMOS transient analysis
+.options wnflag=1
+
+.include "sky130_fd_pr/models/custom1.spice"
+
+
+
+XM1 Vout Vin VDD VDD sky130_fd_pr__pfet_01v8 w=2 l=0.5
+XM2 Vout B VDD VDD sky130_fd_pr__pfet_01v8 w=2 l=0.5
+XM3 Vout Vin Vx 0 sky130_fd_pr__nfet_01v8 w=1 l=0.5
+XM4 Vx B 0 0 sky130_fd_pr__nfet_01v8 w=1 l=0.5
+CLOAD Vout 0 10pf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+V1 Vin 0 PULSE (0 1.8 0 0.01n 0.01n 50ns 100ns)
+V2 VDD 0 dc 1.8V	
+V3 B 0 dc 1.8V
+
+
+.control
+
+
+let run  = 0
+foreach in_delay  0.01n 0.023n 0.0531329n 0.122474n 0.282311n 0.650743n 1.5n 
+
+** Initiating Text Files in folder data
+echo "input_delay:$in_delay" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/input_delay.txt
+echo "input_delay:$in_delay" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/cell_fall.txt
+echo "input_delay:$in_delay" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/cell_rise.txt
+echo "input_delay:$in_delay" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/fall_transition.txt
+echo "input_delay:$in_delay" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/rise_transition.txt
+    
+   
+
+echo "input_delay:$in_delay" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/rise_power.txt
+
+echo "input_delay:$in_delay" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/fall_power.txt
+
+
+reset
+foreach out_cap 0.0005p 0.0012105800p 0.002931p 0.00709641p 0.0171815p 0.0415991p 0.100718p  
+
+alter @V1[PULSE] = [ 0 1.8 0 $in_delay $in_delay 50ns 100ns ]
+alter CLOAD $out_cap
+
+tran 0.01n 150ns
+run
+
+print run
+
+
+
+
+
+
+
+**Cell rise delay
+meas tran crise TRIG v(Vin) VAL=0.9 FALL=1 TARG v(Vout) VAL=0.9 RISE=1
+print crise
+echo "out_cap:$out_cap:cell_rise:$&crise" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/cell_rise.txt
+
+
+
+**Cell fall delay
+meas tran cfall TRIG v(Vin) VAL=0.9 RISE=1 TARG v(Vout) VAL=0.9 FALL=1
+print cfall
+echo "out_cap:$out_cap:cell_fall:$&cfall" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/cell_fall.txt
+
+
+
+**output rise transitin
+meas tran Rise_tran TRIG v(Vout) VAL=0.36 RISE=1 TARG v(Vout) VAL=1.44 RISE=1
+Print Rise_tran
+echo "out_cap:$out_cap:rise_transition:$&rise_tran" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/rise_transition.txt
+   
+
+
+**output fall transitin
+meas tran Fall_tran TRIG v(Vout) VAL=1.44 FALL=1 TARG v(Vout) VAL=0.36 FALL=1
+print Fall_tran
+echo "out_cap:$out_cap:fall_transition:$&fall_tran" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/fall_transition.txt
+
+
+**Rise power
+meas tran Iavg_r AVG v2#branch from=50ns to=90ns
+let Rise_pow=1.8*Iavg_r
+echo "out_cap:$out_cap:Rise_power:$&Rise_pow" >>  /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/rise_power.txt
+
+**Fall power
+meas tran Iavg_l AVG v2#branch from=0ns to=45ns
+let Fall_pow=1.8*Iavg_l
+echo "out_cap:$out_cap:Fall_power:$&Fall_pow" >> /home/majji_open/vlsi/practice/Ngspice_sim/cmos_cir1/fall_power.txt
+
+let run=run+1
+
+end
+
+end
+
+plot vout vin
+
+.endc
+
+
+
+
+
+
+
